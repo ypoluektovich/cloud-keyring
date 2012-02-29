@@ -8,29 +8,29 @@ import java.awt.*;
  */
 public class TehFrame extends JFrame {
 
-	private final DefaultListModel<String> logListModel = new DefaultListModel<>();
-	private JList<String> logList = new JList<>(logListModel);
-
-	{
-		final Dimension size = new Dimension(400, 100);
-		logList.setMinimumSize(size);
-		logList.setPreferredSize(size);
-	}
-
-	public TehFrame() {
+	public TehFrame(final Log log) {
 		setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 
 		final Container contentPane = getContentPane();
 		contentPane.setLayout(new GridBagLayout());
 
-		addLogList(contentPane);
+		addLogList(contentPane, log);
 
 		pack();
 
-		logListModel.addElement("Created UI");
+		log.info("Created UI");
 	}
 
-	private void addLogList(final Container contentPane) {
+	private void addLogList(final Container contentPane, final Log log) {
+		final DefaultListModel<String> model = new DefaultListModel<>();
+		log.setLogListModel(model);
+
+		final JList<String> list = new JList<>(model);
+
+		final Dimension size = new Dimension(400, 100);
+		list.setMinimumSize(size);
+		list.setPreferredSize(size);
+
 		final GridBagConstraints gbc = new GridBagConstraints(
 				0, 0, // grid position
 				1, 1, // grid sizes
@@ -40,6 +40,6 @@ public class TehFrame extends JFrame {
 				new Insets(12, 12, 12, 12),
 				0, 0 // internal padding
 		);
-		contentPane.add(logList, gbc);
+		contentPane.add(list, gbc);
 	}
 }

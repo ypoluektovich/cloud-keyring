@@ -8,6 +8,7 @@ import javax.crypto.spec.SecretKeySpec;
 import javax.swing.*;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.file.*;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -16,41 +17,57 @@ import java.security.NoSuchAlgorithmException;
  * @author Yanus Poluektovich (ypoluektovich@gmail.com)
  */
 public class Main implements Runnable {
-	
-	private final Cipher decryptCipher;
-	private final Cipher encryptCipher;
 
 	public static void main(final String[] args) throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, UnsupportedEncodingException {
-		SwingUtilities.invokeLater(new Runnable() {
-			@Override
-			public void run() {
-				new TehFrame().setVisible(true);
-			}
-		});
-		new Main().run();
+		final Log log = new Log();
+		try {
+			SwingUtilities.invokeAndWait(new Runnable() {
+				@Override
+				public void run() {
+					new TehFrame(log).setVisible(true);
+				}
+			});
+		} catch (InterruptedException | InvocationTargetException e) {
+			e.printStackTrace();
+			return;
+		}
+		new Main(log).run();
 	}
 
-	private Main() throws UnsupportedEncodingException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException {
+	private final Log myLog;
+	
+	private final Cipher myDecryptCipher;
+
+	private final Cipher myEncryptCipher;
+
+	private Main(final Log log) throws UnsupportedEncodingException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException {
+		myLog = log;
+
 		final SecretKeySpec keySpec = new SecretKeySpec("cloud-keyring".getBytes("UTF-8"), "Blowfish");
-		decryptCipher = Cipher.getInstance("Blowfish");
-		decryptCipher.init(Cipher.DECRYPT_MODE, keySpec);
-		encryptCipher = Cipher.getInstance("Blowfish");
-		encryptCipher.init(Cipher.ENCRYPT_MODE, keySpec);
+		myDecryptCipher = Cipher.getInstance("Blowfish");
+		myDecryptCipher.init(Cipher.DECRYPT_MODE, keySpec);
+		myEncryptCipher = Cipher.getInstance("Blowfish");
+		myEncryptCipher.init(Cipher.ENCRYPT_MODE, keySpec);
+
+		log.info("Initialized ciphers");
 	}
 
 	@Override
 	public void run() {
 		final Path workingDir = Paths.get(".").toAbsolutePath().normalize();
+		myLog.info("Listening to directory: " + workingDir);
 		try (final WatchService watcher = workingDir.getFileSystem().newWatchService()) {
 			workingDir.register(watcher, StandardWatchEventKinds.ENTRY_MODIFY);
 
+			myLog.info("Modifying file...");
 			try {
-				Files.write(workingDir.resolve("test.ck"), encryptCipher.doFinal("Nyaa!".getBytes("UTF-8")));
+				Files.write(workingDir.resolve("test.ck"), myEncryptCipher.doFinal("Nyaa!".getBytes("UTF-8")));
 			} catch (IllegalBlockSizeException | BadPaddingException e) {
 				e.printStackTrace();
 				return;
 			}
 
+			myLog.info("Starting watch loop");
 			while (true) {
 				final WatchKey key;
 				try {
@@ -70,12 +87,12 @@ public class Main implements Runnable {
 					}
 					final Path filename = workingDir.resolve(((WatchEvent<Path>) event).context());
 
-					System.out.println("Modified: " + filename);
+					myLog.info("Modified: %s", filename);
 
 					final byte[] bytes = Files.readAllBytes(filename);
 
 					try {
-						System.out.println(new String(decryptCipher.doFinal(bytes), "UTF-8"));
+						myLog.info("New contents: %s", new String(myDecryptCipher.doFinal(bytes), "UTF-8"));
 					} catch (IllegalBlockSizeException | BadPaddingException e) {
 						e.printStackTrace();
 					}
@@ -86,6 +103,7 @@ public class Main implements Runnable {
 				}
 			}
 		} catch (IOException e) {
+			myLog.info("Error! %s" + e.getMessage());
 			e.printStackTrace();
 		}
 	}
