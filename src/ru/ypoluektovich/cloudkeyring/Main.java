@@ -38,18 +38,14 @@ public class Main implements Runnable {
 	
 	private final Cipher myDecryptCipher;
 
-	private final Cipher myEncryptCipher;
-
 	private Main(final Log log) throws UnsupportedEncodingException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException {
 		myLog = log;
 
 		final SecretKeySpec keySpec = new SecretKeySpec("cloud-keyring".getBytes("UTF-8"), "Blowfish");
 		myDecryptCipher = Cipher.getInstance("Blowfish");
 		myDecryptCipher.init(Cipher.DECRYPT_MODE, keySpec);
-		myEncryptCipher = Cipher.getInstance("Blowfish");
-		myEncryptCipher.init(Cipher.ENCRYPT_MODE, keySpec);
 
-		log.info("Initialized ciphers");
+		log.info("Initialized cipher");
 	}
 
 	@Override
@@ -58,14 +54,6 @@ public class Main implements Runnable {
 		myLog.info("Listening to directory: " + workingDir);
 		try (final WatchService watcher = workingDir.getFileSystem().newWatchService()) {
 			workingDir.register(watcher, StandardWatchEventKinds.ENTRY_MODIFY);
-
-			myLog.info("Modifying file...");
-			try {
-				Files.write(workingDir.resolve("test.ck"), myEncryptCipher.doFinal("Nyaa!".getBytes("UTF-8")));
-			} catch (IllegalBlockSizeException | BadPaddingException e) {
-				e.printStackTrace();
-				return;
-			}
 
 			myLog.info("Starting watch loop");
 			while (true) {
@@ -80,12 +68,23 @@ public class Main implements Runnable {
 					break;
 				}
 
+				boolean processedModify = false;
 				for (final WatchEvent<?> event : key.pollEvents()) {
 					final WatchEvent.Kind<?> kind = event.kind();
 					if (kind == StandardWatchEventKinds.OVERFLOW) {
 						continue;
 					}
-					final Path filename = workingDir.resolve(((WatchEvent<Path>) event).context());
+
+					if (processedModify) {
+						break;
+					}
+					processedModify = true;
+
+					final Object contextObject = event.context();
+					if (!(contextObject instanceof Path)) {
+						continue;
+					}
+					final Path filename = workingDir.resolve((Path) contextObject);
 
 					myLog.info("Modified: %s", filename);
 
