@@ -1,7 +1,11 @@
 package ru.ypoluektovich.cloudkeyring;
 
-import javax.crypto.*;
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.SecretKeySpec;
+import javax.swing.*;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.file.*;
@@ -17,6 +21,12 @@ public class Main implements Runnable {
 	private final Cipher encryptCipher;
 
 	public static void main(final String[] args) throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, UnsupportedEncodingException {
+		SwingUtilities.invokeLater(new Runnable() {
+			@Override
+			public void run() {
+				new TehFrame().setVisible(true);
+			}
+		});
 		new Main().run();
 	}
 
