@@ -1,1 +1,2 @@
-This file was created by IntelliJ IDEA 11.0.2 for binding GitHub repository
+CloudKeyring is a simple encrypted DB manager for passwords stored in cloud services.
+It operates by monitoring encrypted files in a directory for changes and reloading and decrypting their contents after such changes.

@@ -35,7 +35,7 @@ public class Main implements Runnable {
 			workingDir.register(watcher, StandardWatchEventKinds.ENTRY_MODIFY);
 
 			try {
-				Files.write(workingDir.resolve("test.txt"), encryptCipher.doFinal("Nyaa!".getBytes("UTF-8")));
+				Files.write(workingDir.resolve("test.ck"), encryptCipher.doFinal("Nyaa!".getBytes("UTF-8")));
 			} catch (IllegalBlockSizeException | BadPaddingException e) {
 				e.printStackTrace();
 				return;
